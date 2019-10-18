@@ -1,5 +1,8 @@
 package com.exmyth.hello.design.pattern.creational.factorymethod;
 
+/**
+ * 感觉产品等级结构
+ */
 public class Test {
     /**
      * 注：此为反例，

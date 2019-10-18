@@ -226,7 +226,7 @@ uml箭头：从子类指向父类，只有知道对方信息时才能指向对�
 ```
 组合聚合区别：关系强弱，组合强，聚合弱。
 
-
+[创建型](https://github.com/exmyth/hello-design/blob/master/README_creational.md)
 
 
 
