@@ -1068,8 +1068,157 @@ jad EnumInstance.class
 
 理解：其实这种带引号的单例模式（threadLocal）已经不能称为单例模式了，因为同一个单例类，取出来的对象已经不一样了
 
+解析：
+
+java.lang.Runtime
+```text
+/**
+ *    饿汉式加载，初始化的时候，就已经new出了对象
+ */ 
+private static Runtime currentRuntime = new Runtime();
+
+    /**
+     * Returns the runtime object associated with the current Java application.
+     * Most of the methods of class <code>Runtime</code> are instance
+     * methods and must be invoked with respect to the current runtime object.
+     *
+     * @return  the <code>Runtime</code> object associated with the current
+     *          Java application.
+     */
+    public static Runtime getRuntime() {
+        return currentRuntime;
+    }
+```
+
+java.awt.Desktop(cs)
+```text
+/**
+     * Returns the <code>Desktop</code> instance of the current
+     * browser context.  On some platforms the Desktop API may not be
+     * supported; use the {@link #isDesktopSupported} method to
+     * determine if the current desktop is supported.
+     * @return the Desktop instance of the current browser context
+     * @throws HeadlessException if {@link
+     * GraphicsEnvironment#isHeadless()} returns {@code true}
+     * @throws UnsupportedOperationException if this class is not
+     * supported on the current platform
+     * @see #isDesktopSupported()
+     * @see java.awt.GraphicsEnvironment#isHeadless
+     */
+
+    /*
+     *    同步锁，context取对象，如果该对象为为null，new出新的对象，然后放入context
+     */
+    public static synchronized Desktop getDesktop(){
+        if (GraphicsEnvironment.isHeadless()) throw new HeadlessException();
+        if (!Desktop.isDesktopSupported()) {
+            throw new UnsupportedOperationException("Desktop API is not " +
+                                                    "supported on the current platform");
+        }
+
+        sun.awt.AppContext context = sun.awt.AppContext.getAppContext();
+        Desktop desktop = (Desktop)context.get(Desktop.class);
+
+        if (desktop == null) {
+            desktop = new Desktop();
+            context.put(Desktop.class, desktop);
+        }
 
 
+    /**
+     *  context put的时候加上同步锁，可以避免多线程put异常
+     */
+    public Object put(Object var1, Object var2) {
+        HashMap var3 = this.table;
+        synchronized(this.table) {
+            MostRecentKeyValue var4 = this.mostRecentKeyValue;
+            if (var4 != null && var4.key == var1) {
+                var4.value = var2;
+            }
+
+            return this.table.put(var1, var2);
+        }
+    }
+```
+
+单例解析3（Spring框架获取单例对象）
+```text
+public final T getObject() throws Exception {
+        if (this.isSingleton()) {
+            return this.initialized ? this.singletonInstance : this.getEarlySingletonInstance();
+        } else {
+            return this.createInstance();
+        }
+    }
+
+/*
+ *    如果被初始化，获取早期的单例对象
+ * 
+ */
+//通过代理去拿新对象
+    private T getEarlySingletonInstance() throws Exception {
+        Class<?>[] ifcs = this.getEarlySingletonInterfaces();
+        if (ifcs == null) {
+            throw new FactoryBeanNotInitializedException(this.getClass().getName() + " does not support circular references");
+        } else {
+            if (this.earlySingletonInstance == null) {
+                this.earlySingletonInstance = Proxy.newProxyInstance(this.beanClassLoader, ifcs, new AbstractFactoryBean.EarlySingletonInvocationHandler());
+            }
+
+            return this.earlySingletonInstance;
+        }
+    }
+```
+
+单例解析4（基于threadLocal的线程案例）（mybaties获取单例对象）
+```text
+private static final ThreadLocal<ErrorContext> LOCAL = new ThreadLocal<ErrorContext>();
+  
+ private ErrorContext() {
+  }
+
+  public static ErrorContext instance() {
+    ErrorContext context = LOCAL.get();
+if (context == null) {
+      context = new ErrorContext();
+      LOCAL.set(context);
+    }
+    return context;
+  }
+```
+
+## 原型模式（创建型）
+
+
+定义：指原型实例指定创建对象的种类，并且通过拷贝这些原型创建新的对象
+
+特点：不需要知道任何创建的细节，不调用构造函数。果要实现拷贝的方法，最好覆盖Object方法（深克隆，详见下节）
+
+场景：
+
+类初始化消耗较多资源
+
+new产生的一个对象需要非常繁琐的过程（数据准备、访问权限等）
+
+构造函数比较复杂
+
+循环体中生产大量对象时
+
+优点：
+
+原型模式性能比直接new一个对象性能高
+
+简化创建过程
+
+缺点：
+
+必须配备克隆方法
+
+对克隆复杂对象或对克隆出的对象进行复杂改造时，容易引入风险
+
+深拷贝、浅拷贝要运用得当
+
+扩展：深克隆和浅克隆
 
 
 
