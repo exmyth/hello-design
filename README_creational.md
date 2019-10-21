@@ -906,8 +906,167 @@ private Object readOrdinaryObject(boolean unshared)
         return obj;
     }
 ```
+枚举方式实现单例
+```text
+/**
+     * Underlying readObject implementation.
+     */
+    private Object readObject0(boolean unshared) throws IOException {
+        boolean oldMode = bin.getBlockDataMode();
+        if (oldMode) {
+            int remain = bin.currentBlockRemaining();
+            if (remain > 0) {
+                throw new OptionalDataException(remain);
+            } else if (defaultDataEnd) {
+                /*
+                 * Fix for 4360508: stream is currently at the end of a field
+                 * value block written via default serialization; since there
+                 * is no terminating TC_ENDBLOCKDATA tag, simulate
+                 * end-of-custom-data behavior explicitly.
+                 */
+                throw new OptionalDataException(true);
+            }
+            bin.setBlockDataMode(false);
+        }
+
+        byte tc;
+        while ((tc = bin.peekByte()) == TC_RESET) {
+            bin.readByte();
+            handleReset();
+        }
+
+        depth++;
+        try {
+            switch (tc) {
+                case TC_NULL:
+                    return readNull();
+
+                case TC_REFERENCE:
+                    return readHandle(unshared);
+
+                case TC_CLASS:
+                    return readClass(unshared);
+
+                case TC_CLASSDESC:
+                case TC_PROXYCLASSDESC:
+                    return readClassDesc(unshared);
+
+                case TC_STRING:
+                case TC_LONGSTRING:
+                    return checkResolve(readString(unshared));
+
+                case TC_ARRAY:
+                    return checkResolve(readArray(unshared));
+ 　　　　　　　　　　/*
+                 * 注意：读取enum
+                 * 
+                 */
+                case TC_ENUM:
+                    return checkResolve(readEnum(unshared));
+
+                case TC_OBJECT:
+                    return checkResolve(readOrdinaryObject(unshared));
+
+                case TC_EXCEPTION:
+                    IOException ex = readFatalException();
+                    throw new WriteAbortedException("writing aborted", ex);
+
+                case TC_BLOCKDATA:
+                case TC_BLOCKDATALONG:
+                    if (oldMode) {
+                        bin.setBlockDataMode(true);
+                        bin.peek();             // force header read
+                        throw new OptionalDataException(
+                            bin.currentBlockRemaining());
+                    } else {
+                        throw new StreamCorruptedException(
+                            "unexpected block data");
+                    }
+
+                case TC_ENDBLOCKDATA:
+                    if (oldMode) {
+                        throw new OptionalDataException(true);
+                    } else {
+                        throw new StreamCorruptedException(
+                            "unexpected end of block data");
+                    }
+
+                default:
+                    throw new StreamCorruptedException(
+                        String.format("invalid type code: %02X", tc));
+            }
+        } finally {
+            depth--;
+            bin.setBlockDataMode(oldMode);
+        }
+    }
+
+```
+```
+ /**
+     * Reads in and returns enum constant, or null if enum type is
+     * unresolvable.  Sets passHandle to enum constant's assigned handle.
+     */
+    private Enum readEnum(boolean unshared) throws IOException {
+        if (bin.readByte() != TC_ENUM) {
+            throw new InternalError();
+        }
+
+        ObjectStreamClass desc = readClassDesc(false);
+        if (!desc.isEnum()) {
+            throw new InvalidClassException("non-enum class: " + desc);
+        }
+
+        int enumHandle = handles.assign(unshared ? unsharedMarker : null);
+        ClassNotFoundException resolveEx = desc.getResolveException();
+        if (resolveEx != null) {
+            handles.markException(enumHandle, resolveEx);
+        }
+
+        String name = readString(false);//通过readString方法获取到枚举对象的名称
+        Enum en = null;
+        Class cl = desc.forClass();
+        if (cl != null) {
+            try {
+                en = Enum.valueOf(cl, name);//通过类型和名称获取到枚举常量，枚举中的name是唯一的，并且对应一个枚举常量，所以拿到的肯定是唯一的对象。
+            } catch (IllegalArgumentException ex) {
+                throw (IOException) new InvalidObjectException(
+                    "enum constant " + name + " does not exist in " +
+                    cl).initCause(ex);
+            }
+            if (!unshared) {
+                handles.setObject(enumHandle, en);
+            }
+        }
+
+        handles.finish(enumHandle);
+        passHandle = enumHandle;
+        return en;
+    }
+```
+
+jad https://varaneckas.com/jad/
+
+jad EnumInstance.class
 
 
+场景 单例设计模式-容器模式
+应用于在程序初始化的时候把多个单例对象放入到singletonMap中，使用的时候直接通过key获取对象。可以应用在懒汉模式中，不适用于饿汉模式（饿汉模式由于每次都要重新初始化会出现多线程安全问题）
+
+使用hashtable会线程安全，但是由于其同步锁，会影响性能。
+
+
+场景
+
+使用同步锁使用时间换空间的方式，（线程排队时间比较长）
+
+而使用threadlocal使用空间换时间的方式。
+
+基于threadlocal的单例模式，为每一个线程提供了一个对象，多线程访问的时候不会相互影响。
+
+基于ThreadLocal的单例实现，数据库连接池的这种应用场景直接得提高了并发量，并且隔离了线程，不至于因为某一线程数据库连接断开造成全局断开，直接得提高了应用的容错率。但是代码层面要避免混用不同线程产生的单例。
+
+理解：其实这种带引号的单例模式（threadLocal）已经不能称为单例模式了，因为同一个单例类，取出来的对象已经不一样了
 
 
 
