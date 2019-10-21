@@ -820,6 +820,94 @@ jvm 在类的初始化阶段，也就是class被加载后并且被线程使用�
 缺点：如果该类不经常使用，比较消耗资源，造成内存浪费。
 
 
+通过反射创建对象，序列化和反序列化把单例模式破坏了
+所以，在序列化和反序列化（把对象写入文件，从文件读取该对象）的时候，序列化和反序列化后的对象和之前的对象的hash码不再相同，不要再使用equals和==方法
+
+在底层类中，搜索 实现序列化接口的类是否有readResolve方法，有的话，就new一个新对象，否则，返回null。
+
+通过反射创建的对象是新的对象，不是原来的对象。
+
+ObjectStreamClass
+```text
+/**
+     * Returns true if represented class is serializable/externalizable and can
+     * be instantiated by the serialization runtime--i.e., if it is
+     * externalizable and defines a public no-arg constructor, or if it is
+     * non-externalizable and its first non-serializable superclass defines an
+     * accessible no-arg constructor.  Otherwise, returns false.
+     */
+    boolean isInstantiable() {
+        requireInitialized();
+        return (cons != null);
+    }
+    
+/**
+     * Returns true if represented class is serializable or externalizable and
+     * defines a conformant readResolve method.  Otherwise, returns false.
+     */
+    boolean hasReadResolveMethod() {
+        requireInitialized();
+        return (readResolveMethod != null);
+    }
+    
+private Object readOrdinaryObject(boolean unshared)
+        throws IOException
+    {
+        if (bin.readByte() != TC_OBJECT) {
+            throw new InternalError();
+        }
+
+        ObjectStreamClass desc = readClassDesc(false);
+        desc.checkDeserialize();
+
+        Class<?> cl = desc.forClass();
+        if (cl == String.class || cl == Class.class
+                || cl == ObjectStreamClass.class) {
+            throw new InvalidClassException("invalid class descriptor");
+        }
+
+        Object obj;
+        try {
+            obj = desc.isInstantiable() ? desc.newInstance() : null;
+        } catch (Exception ex) {
+            throw (IOException) new InvalidClassException(
+                desc.forClass().getName(),
+                "unable to create instance").initCause(ex);
+        }
+
+        passHandle = handles.assign(unshared ? unsharedMarker : obj);
+        ClassNotFoundException resolveEx = desc.getResolveException();
+        if (resolveEx != null) {
+            handles.markException(passHandle, resolveEx);
+        }
+
+        if (desc.isExternalizable()) {
+            readExternalData((Externalizable) obj, desc);
+        } else {
+            readSerialData(obj, desc);
+        }
+
+        handles.finish(passHandle);
+
+        //核心关注desc.hasReadResolveMethod方法
+        if (obj != null &&
+            handles.lookupException(passHandle) == null &&
+            desc.hasReadResolveMethod())
+        {
+            Object rep = desc.invokeReadResolve(obj);
+            if (unshared && rep.getClass().isArray()) {
+                rep = cloneArray(rep);
+            }
+            if (rep != obj) {
+                handles.setObject(passHandle, obj = rep);
+            }
+        }
+
+        return obj;
+    }
+```
+
+
 
 
 
