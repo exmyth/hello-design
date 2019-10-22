@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.adapter.classadapter;
+package com.exmyth.hello.design.pattern.structural.adapter.classadapter;
 
 /**
  * 该类是被适配者，想实现目标类的方法

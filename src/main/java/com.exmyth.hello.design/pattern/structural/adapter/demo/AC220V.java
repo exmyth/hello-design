@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.adapter.demo;
+package com.exmyth.hello.design.pattern.structural.adapter.demo;
 
 public class AC220V {
     public int outputAC220V(){

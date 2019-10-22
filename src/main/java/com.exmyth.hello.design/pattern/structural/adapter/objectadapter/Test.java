@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.adapter.classadapter;
+package com.exmyth.hello.design.pattern.structural.adapter.objectadapter;
 
 public class Test {
     public static void main(String [] args){

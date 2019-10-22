@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.adapter.classadapter;
+package com.exmyth.hello.design.pattern.structural.adapter.classadapter;
 
 public class Adapter extends Adaptee implements Target {
     @Override

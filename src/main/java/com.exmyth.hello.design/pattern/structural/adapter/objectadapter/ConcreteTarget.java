@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.adapter.objectadapter;
+package com.exmyth.hello.design.pattern.structural.adapter.objectadapter;
 
 /**
  * 目标实现类

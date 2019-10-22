@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.adapter.demo;
+package com.exmyth.hello.design.pattern.structural.adapter.demo;
 
 /**
  * 电源适配器

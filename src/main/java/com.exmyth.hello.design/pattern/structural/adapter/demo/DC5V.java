@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.adapter.demo;
+package com.exmyth.hello.design.pattern.structural.adapter.demo;
 
 public interface DC5V {
     //输出5V直流电
