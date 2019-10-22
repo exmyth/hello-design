@@ -1291,5 +1291,13 @@ public class CacheKey implements Cloneable, Serializable {
 }
 ```
 
+思考？
+
+> 克隆对象的引用问题：查看克隆出的对象是否是同一个对象
+
+> 工厂方法和抽象工厂最大的区别是什么
+
+> 产品镞和产品等级结构
+
 
 
