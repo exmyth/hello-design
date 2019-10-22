@@ -1220,7 +1220,76 @@ new产生的一个对象需要非常繁琐的过程（数据准备、访问权�
 
 扩展：深克隆和浅克隆
 
+源码解析1（java.lang.Object对象）
+```text
+//native 调用非java代码接口 
+protected native Object clone() throws CloneNotSupportedException;
+```
+ 
+源码解析2（ArrayList实现克隆）
+```text
+public class ArrayList<E> extends AbstractList<E>
+        implements List<E>, RandomAccess, Cloneable, java.io.Serializable{
 
+/**
+     * Returns a shallow copy of this <tt>ArrayList</tt> instance.  (The
+     * elements themselves are not copied.)
+     *
+     * @return a clone of this <tt>ArrayList</tt> instance
+     */
+    public Object clone() {
+        try {
+            @SuppressWarnings("unchecked")
+                ArrayList<E> v = (ArrayList<E>) super.clone();
+            v.elementData = Arrays.copyOf(elementData, size);
+            v.modCount = 0;
+            return v;
+        } catch (CloneNotSupportedException e) {
+            // this shouldn't happen, since we are Cloneable
+            throw new InternalError();
+        }
+    }
+
+}
+```
+源码解析3（mybaties 的cacheKey）
+```text
+/**
+ *    Copyright 2009-2016 the original author or authors.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+package org.apache.ibatis.cache;
+
+import java.io.Serializable;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author Clinton Begin
+ */
+public class CacheKey implements Cloneable, Serializable {
+ 
+ @Override
+  public CacheKey clone() throws CloneNotSupportedException {
+    CacheKey clonedCacheKey = (CacheKey) super.clone();
+    clonedCacheKey.updateList = new ArrayList<Object>(updateList);
+    return clonedCacheKey;
+  }
+
+}
+```
 
 
 
