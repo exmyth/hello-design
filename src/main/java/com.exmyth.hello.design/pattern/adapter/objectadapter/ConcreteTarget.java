@@ -1,0 +1,11 @@
+package com.exmyth.hello.design.pattern.adapter.objectadapter;
+
+/**
+ * 目标实现类
+ */
+public class ConcreteTarget implements Target {
+    @Override
+    public void request() {
+        System.out.println("目标实现类自己的方法，，，");
+    }
+}

@@ -445,11 +445,324 @@ TransactionalCache
 WeakCache
 ```
 
+## 适配器模式（结构型）
 
+### 1.1　　类型：
+结构型
 
+### 1.2　　定义：
+将一个类的接口转换成客户期望的另一个接口
 
+◆使原本接口不兼容的类可以一起工作
 
+### 1.3　　适用场景：
+◆已经存在的类，它的方法和需求不匹配时（方法结果相同或相似）
 
+◆不是软件设计阶段考虑的设计模式，是随着软件维护，由于不同产品、不同厂家造成功能类似而接口不相同情况下的解决方案，是软件维护阶段需要考虑的事情
+
+### 1.4　　优点：
+◆能提高类的透明性和复用，现有的类复用但不需要改变（解决了现有类和目标类不匹配的问题）
+
+◆目标类和适配器类解耦，提高程序扩展性（不太明白这块意思，代码见）
+
+◆符合开闭原则
+
+### 1.5　　缺点：
+◆适配器编写过程需要全面考虑，可能会增加系统的复杂性
+
+◆增加系统代码可读的难度
+
+### 1.6　　扩展:
+◆对象适配器（符合组合复用原则，并且使用委托机制）
+
+◆类适配器（通过类继承实现）
+
+### 1.7　　和其他设计模式的比较
+适配器模式和外观模式：
+
+它们都是现有类现存系统的封装，前者复用原有的接口，后者定义了新的接口，
+
+前者使原有的两个接口协同工作，后者在现有的系统中提供一个更为方便的访问入口，
+
+适配力度不同，后者适配整个子系统
+
+类适配器和对象适配器最大的区别
+
+类适配器通过继承关系达到适配的目的，而对象适配器通过组合达到适配目的。
+
+### 代码演练
+#### 2.1　　代码演练1（类适配器模式）
+
+需求相关：a类和b类，想用b类或者b类的子类实现a类的方法
+
+设计分析：
+
+适配器类c继承了被适配器类a并且实现了目标类b的接口，通过适配器类c把被适配者a的方法适配给了目标类b；
+
+适配器类c是被适配者a的子类，通过调用父类的方法实现了目标类b
+
+#### 2.1　　代码演练2（对象适配模式）
+需求：a类和b类，想用b类或者b类的子类实现a类的方法
+
+设计分析：通过组合达到目的
+
+关联关系：只有 适配类发生了变化，其他类都不变。
+
+#### 2.3　　代码演练3（具体应用场景）
+需求：手机电源适配器，把220V交流电转化为5V直流电
+
+### 源码解析
+#### 1.1　　源码解析1（在jdk中的应用）
+xmlAdapter（此类是用于适配xml的一个类，是处理xml序列化和反序列化的一个类）
+```text
+public abstract class XmlAdapter<ValueType,BoundType> {
+
+    /**
+     * Do-nothing constructor for the derived classes.
+     */
+    protected XmlAdapter() {}
+
+    /**
+     *  处理反序列化*/
+    public abstract BoundType unmarshal(ValueType v) throws Exception;
+
+    /**
+      * 处理序列化*/
+    public abstract ValueType marshal(BoundType v) throws Exception;
+}
+```
+对于xml序列化的时候，我们时间可以写一个date类，可以继承xmlAdapter抽象类，实现它的序列化和反序列化方法。
+
+#### 1.2　　源码解析2（Spring中的通知管理）
+功能描述：
+
+通知适配器将通知类适配成各种类型的通知，如：前置通知，后置通知等等（关于通知的课程可以详细查看我的spring笔记）
+
+通知适配器接口：
+```text
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+
+package org.springframework.aop.framework.adapter;
+
+import org.aopalliance.aop.Advice;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.springframework.aop.Advisor;
+
+public interface AdvisorAdapter {
+    boolean supportsAdvice(Advice var1);
+
+    MethodInterceptor getInterceptor(Advisor var1);
+}
+```
+前置通知适配器实现类：
+```text
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+
+package org.springframework.aop.framework.adapter;
+
+import java.io.Serializable;
+import org.aopalliance.aop.Advice;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.springframework.aop.Advisor;
+import org.springframework.aop.MethodBeforeAdvice;
+
+class MethodBeforeAdviceAdapter implements AdvisorAdapter, Serializable {
+    MethodBeforeAdviceAdapter() {
+    }
+
+    public boolean supportsAdvice(Advice advice) {
+        return advice instanceof MethodBeforeAdvice;
+    }
+
+    public MethodInterceptor getInterceptor(Advisor advisor) {
+        MethodBeforeAdvice advice = (MethodBeforeAdvice)advisor.getAdvice();
+        return new MethodBeforeAdviceInterceptor(advice);
+    }
+}
+```
+advisor组合得到通知类：
+```java
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+
+package org.springframework.aop;
+
+import org.aopalliance.aop.Advice;
+
+public interface Advisor {
+    Advice getAdvice();
+
+    boolean isPerInstance();
+}
+```
+MethodBeforeAdvice继承超类(隔了好几层继承实现)：
+```java
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+
+package org.aopalliance.intercept;
+
+import org.aopalliance.aop.Advice;
+
+public interface Interceptor extends Advice {
+}
+```
+#### 1.3　　源码解析3(SpringMVC中的应用)
+```java
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+
+package org.springframework.web.servlet;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public interface HandlerAdapter {
+    boolean supports(Object var1);
+
+    ModelAndView handle(HttpServletRequest var1, HttpServletResponse var2, Object var3) throws Exception;
+
+    long getLastModified(HttpServletRequest var1, Object var2);
+}
+```
+
+适配器类：
+```java
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+
+package org.springframework.web.servlet.mvc;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.springframework.web.servlet.HandlerAdapter;
+import org.springframework.web.servlet.ModelAndView;
+
+public class SimpleControllerHandlerAdapter implements HandlerAdapter {
+    public SimpleControllerHandlerAdapter() {
+    }
+    /**  如果对应的handler有确切的Controller并支持的话，返回true，否则，返回false
+　　　*/
+    public boolean supports(Object handler) {
+        return handler instanceof Controller;
+    }
+
+    public ModelAndView handle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        return ((Controller)handler).handleRequest(request, response);
+    }
+
+    public long getLastModified(HttpServletRequest request, Object handler) {
+        return handler instanceof LastModified ? ((LastModified)handler).getLastModified(request) : -1L;
+    }
+}
+```
+DispatcherServlet(通过handlermapper找到对应的handler，适配器中的client)
+```text
+protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        HttpServletRequest processedRequest = request;
+        HandlerExecutionChain mappedHandler = null;
+        boolean multipartRequestParsed = false;
+        WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(request);
+
+        try {
+            try {
+                ModelAndView mv = null;
+                Exception dispatchException = null;
+
+                try {
+                    processedRequest = this.checkMultipart(request);
+                    multipartRequestParsed = processedRequest != request;
+                    mappedHandler = this.getHandler(processedRequest);
+                    if (mappedHandler == null || mappedHandler.getHandler() == null) {
+                        this.noHandlerFound(processedRequest, response);
+                        return;
+                    }
+
+                    HandlerAdapter ha = this.getHandlerAdapter(mappedHandler.getHandler());
+                    String method = request.getMethod();
+                    boolean isGet = "GET".equals(method);
+                    if (isGet || "HEAD".equals(method)) {
+                        long lastModified = ha.getLastModified(request, mappedHandler.getHandler());
+                        if (this.logger.isDebugEnabled()) {
+                            this.logger.debug("Last-Modified value for [" + getRequestUri(request) + "] is: " + lastModified);
+                        }
+
+                        if ((new ServletWebRequest(request, response)).checkNotModified(lastModified) && isGet) {
+                            return;
+                        }
+                    }
+
+                    if (!mappedHandler.applyPreHandle(processedRequest, response)) {
+                        return;
+                    }
+
+                    try {
+　　　　　　　　　　　　//通过适配器handle方法，返回对应的model&View对象
+                        mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
+                    } finally {
+                        if (asyncManager.isConcurrentHandlingStarted()) {
+                            return;
+                        }
+
+                    }
+
+                    this.applyDefaultViewName(request, mv);
+                    mappedHandler.applyPostHandle(processedRequest, response, mv);
+                } catch (Exception var27) {
+                    dispatchException = var27;
+                }
+
+                this.processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
+            } catch (Exception var28) {
+                this.triggerAfterCompletion(processedRequest, response, mappedHandler, var28);
+            } catch (Error var29) {
+                this.triggerAfterCompletionWithError(processedRequest, response, mappedHandler, var29);
+            }
+
+        } finally {
+            if (asyncManager.isConcurrentHandlingStarted()) {
+                mappedHandler.applyAfterConcurrentHandlingStarted(processedRequest, response);
+                return;
+            } else {
+                if (multipartRequestParsed) {
+                    this.cleanupMultipart(processedRequest);
+                }
+
+            }
+        }
+    }
+```
+controller接口：
+```java
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+
+package org.springframework.web.servlet.mvc;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.springframework.web.servlet.ModelAndView;
+
+public interface Controller {
+    ModelAndView handleRequest(HttpServletRequest var1, HttpServletResponse var2) throws Exception;
+}
+```
 
 
 
