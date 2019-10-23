@@ -811,7 +811,358 @@ public interface Controller {
 
 享元模式和单例模式：容器单例是两种方式的一种结合。享元模式是一种复用对象的思想
 
+### 1.8 源码解析
 
+#### 1.1 源码解析1（jdk中的应用）
+```text
+public final class Integer extends Number implements Comparable<Integer> {
+
+ /**
+     * Returns an {@code Integer} instance representing the specified
+     * {@code int} value.  If a new {@code Integer} instance is not
+     * required, this method should generally be used in preference to
+     * the constructor {@link #Integer(int)}, as this method is likely
+     * to yield significantly better space and time performance by
+     * caching frequently requested values.
+     *
+     * This method will always cache values in the range -128 to 127,
+     * inclusive, and may cache other values outside of this range.
+     *　如果传入的数值在缓存的-127和128之间，那么都会在cache中，否则的话，会new出新的对象，这也是为什么100==100为true，1000==1000为false
+     *  test中a，b，c，d都执行了该方法，一共执行了4次   。
+     * @param  i an {@code int} value.
+     * @return an {@code Integer} instance representing {@code i}.
+     * @since  1.5
+     */
+    public static Integer valueOf(int i) {
+        assert IntegerCache.high >= 127;
+        if (i >= IntegerCache.low && i <= IntegerCache.high)
+            return IntegerCache.cache[i + (-IntegerCache.low)];
+        return new Integer(i);
+    }
+
+
+/**
+     * Cache to support the object identity semantics of autoboxing for values between
+     * -128 and 127 (inclusive) as required by JLS.
+     *
+     * The cache is initialized on first usage.  The size of the cache
+     * may be controlled by the -XX:AutoBoxCacheMax=<size> option.
+     * During VM initialization, java.lang.Integer.IntegerCache.high property
+     * may be set and saved in the private system properties in the
+     * sun.misc.VM class.
+     */
+
+    private static class IntegerCache {
+        static final int low = -128;
+        static final int high;
+        static final Integer cache[];
+
+        static {
+            // high value may be configured by property
+            int h = 127;
+            String integerCacheHighPropValue =
+                sun.misc.VM.getSavedProperty("java.lang.Integer.IntegerCache.high");
+            if (integerCacheHighPropValue != null) {
+                int i = parseInt(integerCacheHighPropValue);
+                i = Math.max(i, 127);
+                // Maximum array size is Integer.MAX_VALUE
+                h = Math.min(i, Integer.MAX_VALUE - (-low) -1);
+            }
+            high = h;
+
+            cache = new Integer[(high - low) + 1];
+            int j = low;
+            for(int k = 0; k < cache.length; k++)
+                cache[k] = new Integer(j++);
+        }
+
+        private IntegerCache() {}
+    }
+}
+```
+#### 1.2 源码解析2（tomcat中的应用）
+父类（GenericObjectPoolConfig）：添加了一些默认的配置
+```java
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+
+package org.apache.commons.pool2.impl;
+
+public class GenericObjectPoolConfig extends BaseObjectPoolConfig {
+    public static final int DEFAULT_MAX_TOTAL = 8;
+    public static final int DEFAULT_MAX_IDLE = 8;
+    public static final int DEFAULT_MIN_IDLE = 0;
+    private int maxTotal = 8;
+    private int maxIdle = 8;
+    private int minIdle = 0;
+
+    public GenericObjectPoolConfig() {
+    }
+
+    public int getMaxTotal() {
+        return this.maxTotal;
+    }
+
+    public void setMaxTotal(int maxTotal) {
+        this.maxTotal = maxTotal;
+    }
+
+    public int getMaxIdle() {
+        return this.maxIdle;
+    }
+
+    public void setMaxIdle(int maxIdle) {
+        this.maxIdle = maxIdle;
+    }
+
+    public int getMinIdle() {
+        return this.minIdle;
+    }
+
+    public void setMinIdle(int minIdle) {
+        this.minIdle = minIdle;
+    }
+
+    public GenericObjectPoolConfig clone() {
+        try {
+            return (GenericObjectPoolConfig)super.clone();
+        } catch (CloneNotSupportedException var2) {
+            throw new AssertionError();
+        }
+    }
+}
+```
+子类（GenericKeyedObjectPoolConfig）（选2版本）：
+
+通过object的双端队列来保存对象池的对象，重点看p是怎么给值的。
+```text
+/**
+   *     借
+   */
+ public T borrowObject(K key, long borrowMaxWaitMillis) throws Exception {
+        this.assertOpen();
+        PooledObject<T> p = null;
+        boolean blockWhenExhausted = this.getBlockWhenExhausted();
+        long waitTime = 0L;
+        GenericKeyedObjectPool.ObjectDeque objectDeque = this.register(key);
+
+        try {
+            while(p == null) {
+                boolean create = false;
+                if (blockWhenExhausted) {
+                    p = (PooledObject)objectDeque.getIdleObjects().pollFirst();
+                    if (p == null) {
+                        create = true;
+                        p = this.create(key);
+                    }
+
+                    if (p == null) {
+                        if (borrowMaxWaitMillis < 0L) {
+                            p = (PooledObject)objectDeque.getIdleObjects().takeFirst();
+                        } else {
+                            waitTime = System.currentTimeMillis();
+                            p = (PooledObject)objectDeque.getIdleObjects().pollFirst(borrowMaxWaitMillis, TimeUnit.MILLISECONDS);
+                            waitTime = System.currentTimeMillis() - waitTime;
+                        }
+                    }
+
+                    if (p == null) {
+                        throw new NoSuchElementException("Timeout waiting for idle object");
+                    }
+
+                    if (!p.allocate()) {
+                        p = null;
+                    }
+                } else {
+                    p = (PooledObject)objectDeque.getIdleObjects().pollFirst();
+                    if (p == null) {
+                        create = true;
+                        p = this.create(key);
+                    }
+
+                    if (p == null) {
+                        throw new NoSuchElementException("Pool exhausted");
+                    }
+
+                    if (!p.allocate()) {
+                        p = null;
+                    }
+                }
+
+                if (p != null) {
+                    try {
+                        this.factory.activateObject(key, p);
+                    } catch (Exception var22) {
+                        try {
+                            this.destroy(key, p, true);
+                        } catch (Exception var21) {
+                            ;
+                        }
+
+                        p = null;
+                        if (create) {
+                            NoSuchElementException nsee = new NoSuchElementException("Unable to activate object");
+                            nsee.initCause(var22);
+                            throw nsee;
+                        }
+                    }
+
+                    if (p != null && this.getTestOnBorrow()) {
+                        boolean validate = false;
+                        Throwable validationThrowable = null;
+
+                        try {
+                            validate = this.factory.validateObject(key, p);
+                        } catch (Throwable var20) {
+                            PoolUtils.checkRethrow(var20);
+                            validationThrowable = var20;
+                        }
+
+                        if (!validate) {
+                            try {
+                                this.destroy(key, p, true);
+                                this.destroyedByBorrowValidationCount.incrementAndGet();
+                            } catch (Exception var19) {
+                                ;
+                            }
+
+                            p = null;
+                            if (create) {
+                                NoSuchElementException nsee = new NoSuchElementException("Unable to validate object");
+                                nsee.initCause(validationThrowable);
+                                throw nsee;
+                            }
+                        }
+                    }
+                }
+            }
+        } finally {
+            this.deregister(key);
+        }
+
+        this.updateStatsBorrow(p, waitTime);
+        return p.getObject();
+    }
+
+
+/**
+   *     还
+   */
+  public void returnObject(K key, T obj) {
+        GenericKeyedObjectPool<K, T>.ObjectDeque<T> objectDeque = (GenericKeyedObjectPool.ObjectDeque)this.poolMap.get(key);
+        PooledObject<T> p = (PooledObject)objectDeque.getAllObjects().get(obj);
+        if (p == null) {
+            throw new IllegalStateException("Returned object not currently part of this pool");
+        } else {
+            long activeTime = p.getActiveTimeMillis();
+            if (this.getTestOnReturn() && !this.factory.validateObject(key, p)) {
+                try {
+                    this.destroy(key, p, true);
+                } catch (Exception var11) {
+                    this.swallowException(var11);
+                }
+
+                this.updateStatsReturn(activeTime);
+            } else {
+                try {
+                    this.factory.passivateObject(key, p);
+                } catch (Exception var13) {
+                    this.swallowException(var13);
+
+                    try {
+                        this.destroy(key, p, true);
+                    } catch (Exception var10) {
+                        this.swallowException(var10);
+                    }
+
+                    this.updateStatsReturn(activeTime);
+                    return;
+                }
+
+                if (!p.deallocate()) {
+                    throw new IllegalStateException("Object has already been retured to this pool");
+                } else {
+                    int maxIdle = this.getMaxIdlePerKey();
+                    LinkedBlockingDeque<PooledObject<T>> idleObjects = objectDeque.getIdleObjects();
+                    if (this.isClosed() || maxIdle > -1 && maxIdle <= idleObjects.size()) {
+                        try {
+                            this.destroy(key, p, true);
+                        } catch (Exception var12) {
+                            this.swallowException(var12);
+                        }
+                    } else if (this.getLifo()) {
+                        idleObjects.addFirst(p);
+                    } else {
+                        idleObjects.addLast(p);
+                    }
+
+                    if (this.hasBorrowWaiters()) {
+                        this.reuseCapacity();
+                    }
+
+                    this.updateStatsReturn(activeTime);
+                }
+            }
+        }
+    }
+```
+工厂类：
+```java
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+
+package org.apache.commons.pool2;
+
+public interface KeyedPooledObjectFactory<K, V> {
+   //创建对象方法
+    PooledObject<V> makeObject(K var1) throws Exception;
+
+  //销毁对象方法
+    void destroyObject(K var1, PooledObject<V> var2) throws Exception;
+
+    //验证对象方法
+    boolean validateObject(K var1, PooledObject<V> var2);
+    //激活对象方法，用的时候激活
+    void activateObject(K var1, PooledObject<V> var2) throws Exception;
+    //钝化对象方法，不用的钝化
+    void passivateObject(K var1, PooledObject<V> var2) throws Exception;
+}
+```
+## 组合模式
+### 1.1　　类型：
+结构型
+
+### 1.2　　定义：
+◆定义：将对象组合成树形结构以表示”部分-整体”的层次结构
+◆组合模式使客户端对单个对象和组合对象保持一致的方式处理
+
+### 1.3　　适用场景：
+◆希望客户端可以忽略组合对象与单个对象的差异时
+
+◆处理一个树形结构时
+
+### 1.4　　优点：
+◆清楚地定义分层次的复杂对象，表示对象的全部或部分层次
+
+◆让客户端忽略了层次的差异，方便对整个层次结构进行控制
+
+◆简化客户端代码
+
+◆符合开闭原则
+
+### 1.5　　缺点：
+◆限制类型时会较为复杂
+
+◆使设计变得更加抽象
+
+### 1.6　　与其他模式的交互
+◆组合模式和访问者模式
+
+◆可以用访问模式访问组合模式的递归结构
 
 
 

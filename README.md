@@ -7,7 +7,8 @@ The Way To Architect
 [创建型模式](https://github.com/exmyth/hello-design/blob/master/README_creational.md)：
 工厂方法模式，抽象工厂模式，建造者模式，单例模式，原型模式
 
-结构型模式：适配器模式，装饰者模式，代理模式，外观模式，桥接模式，组合模式，享元模式
+[结构型模式](https://github.com/exmyth/hello-design/blob/master/README_structural.md)：
+适配器模式，装饰者模式，代理模式，外观模式，桥接模式，组合模式，享元模式
 
 行为型模式：策略模式，观察者模式，责任链模式，备忘录模式，模版方法模式，迭代器模式，中介者模式，命令模式，访问者模式，解释器模式，状态模式
 
