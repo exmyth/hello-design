@@ -1444,13 +1444,11 @@ public void applyAll() {
 
 代码演练
 
-1.1　　代码演练1
+#### 1.1　　代码演练1
 
 需求：
 
 打印出从银行获取的账号类
-
- 
 
 优点：
 
@@ -1458,9 +1456,225 @@ a　　假如我只用用一个银行接口 去获取账号的内容，银行实
 
 b　　而使用桥接模式可以 让实现（账号类）和抽象（银行类）分离，银行属性增加修改银行类即可，账号类属性增加修改账号类即可。逻辑清晰，同时也解决了上述类爆炸的情况。
 
+#### 1.2　　代码演练2(补充1.1的缺陷：没有将委托实现)
+
+### 1.7 源码解析
+
+1.1　　源码解析1 jdk中的应用（驱动类）
+步骤：
+
+class.forName 调取驱动接口的静态块，触发驱动管理类DriverManager 的注册驱动方法，从而将该驱动放到CopyOnWriteArrayList中。
+
+getConnect方法是通过传入url用户名密码。
+
+针对不同的数据库，通过driverManager中的不同方法，获取的都是相同的接口，jdbc在最初的时候设计了一套接口，再由各个数据库公司实现这套接口。
+
+重点：
+
+实现（各种Driver如SqlDriver，OracleDriver等）和抽象（DriverManager的分离）分离
+
+```java
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+
+package com.mysql.jdbc;
+
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class Driver extends NonRegisteringDriver implements java.sql.Driver {
+    public Driver() throws SQLException {
+    }
+//class.forName 直接调用该静态块
+    static {
+        try {
+            DriverManager.registerDriver(new Driver());
+        } catch (SQLException var1) {
+            throw new RuntimeException("Can't register driver!");
+        }
+    }
+}
+```
+驱动实现类：
+
+```java
+public class Driver extends NonRegisteringDriver implements java.sql.Driver {
+    public Driver() throws SQLException {
+    }
+}
+```
+
+DriverManager
+```java
+public class DriverManager {
+    // List of registered JDBC drivers
+    private final static CopyOnWriteArrayList<DriverInfo> registeredDrivers = new CopyOnWriteArrayList<DriverInfo>();
+    private static volatile int loginTimeout = 0;
+    private static volatile java.io.PrintWriter logWriter = null;
+    private static volatile java.io.PrintStream logStream = null;
+    // Used in println() to synchronize logWriter
+    private final static  Object logSync = new Object();
+
+    /* Prevent the DriverManager class from being instantiated. */
+    private DriverManager(){}
+
+ /**
+    *内部类，对driver进行封装
+    */
+class DriverInfo {
+
+    final Driver driver;
+    DriverInfo(Driver driver) {
+        this.driver = driver;
+    }
+
+    public boolean equals(Object other) {
+        return (other instanceof DriverInfo)
+                && this.driver == ((DriverInfo) other).driver;
+    }
+
+    public int hashCode() {
+        return driver.hashCode();
+    }
+
+    public String toString() {
+        return ("driver[className="  + driver + "]");
+    }
+}
+
+//注册驱动的方法
+
+public static synchronized void registerDriver(java.sql.Driver driver)
+    throws SQLException {
+
+    /* Register the driver if it has not already been added to our list */
+    if(driver != null) {
+        registeredDrivers.addIfAbsent(new DriverInfo(driver));
+    } else {
+        // This is for compatibility with the original DriverManager
+        throw new NullPointerException();
+    }
+
+    println("registerDriver: " + driver);
+}
+
+
+//获取数据库连接
+@CallerSensitive
+public static Connection getConnection(String url,
+    String user, String password) throws SQLException {
+    java.util.Properties info = new java.util.Properties();
+
+    if (user != null) {
+        info.put("user", user);
+    }
+    if (password != null) {
+        info.put("password", password);
+    }
+
+    return (getConnection(url, info, Reflection.getCallerClass()));
+}
+}
+```
+
+## 代理模式
+### 1.1　　类型：
+结构型
+
+### 1.2　　定义：
+◆定义：为其他对象提供一种代理，以控制对这个对象的访问
+
+◆代理对象在客户端和目标对象之间起到中介的作用
+
+比喻：目标对象可以理解为房东，客户端代表你，房屋中介代表中介，签合同和水电费缴纳直接找中介就可以。
+
+### 1.3　　适用场景：
+◆保护目标对象
+
+◆增强目标对象
+
+### 1.4　　优点：
+◆代理模式能将代理对象与真实被调用的目标对象分离
+
+◆一定程度上降低了系统的耦合度，扩展性好
+
+◆保护目标对象
+
+◆增强目标对象
+
+### 1.5　　缺点：
+◆代理模式会造成系统设计中类的数目增加
+
+◆在客户端和目标对象增加一个代理对象，会造成请求处理速度变慢
+
+◆增加系统的复杂度
+
+### 1.6　　代理模式扩展：
+◆静态代理
+
+◆动态代理
+
+◆CGLib代理
+
+```text
+静态代理就是在代码中指定显式的代理。
+
+动态代理无法代理类，但是可以代理接口，在jdk动态代理类中类加载是在程序调用到动态代理对象时，才由jvm真正创建，jvm根据传过来的业务类对像和方法名动态的创建了一个代理类的class文件，并且class文件被字节码引擎执行，然后通过该代理类的对像进行方法调用，我们要做的就是把代理类的实现写好。我们更关注的是方法上的增强before 和after增强等。
+
+◆CGLib代理可以代理类.如果业务类没有实现接口，直接定义业务方法的话，无法使用jdk动态代理。
+
+如果接口定义1方法和2方法，实现类自己有3方法，3方法也无法通过jdk进行动态代理
+
+CGLIB代理可以代理实现类，它的原理
+
+如果我们代理一个类，CGLIB会生成一个该类的子类，覆盖其中的方法，(通过继承和重写)。
+
+如果该类是final的，该类不可被继承；如果该类不是final的但是该类的某个方法是final的，该类无法被重写。
+
+所以使用cglib的时候，需要注意final的情况。
+```
+静态代理通过在代码中显式的定义了一个业务实现类的一个代理，在代理类中对同名的方法进行包装，用户通过对代理类的被包装过的方法来调用目标对象的业务方法，同时对目标对象的业务方法进行增强。
+
+jdk的动态代理是通过接口中的方法名对在动态生成的代理类中，调用业务实现类的同名方法。注意:必须是接口
+
+cglib是通过继承来实现的，生成的代理类是业务类的子类，通过重写业务方法执行代理。
+
+Spring代理选择-扩展
+
+◆当Bean有实现接口时，Spring就会用JDK的动态代理
+
+◆当Bean没有实现接口时，Spring使用CGlib
+
+◆可以强制使用Cglib
+
+◆在spring配置中加入 **<aop:aspectj-autoproxy proxy-target-class="true"/>**
+
+◆参考资料：httpsi/docs.spring.io/spring/docs/curent/spring-framework-reference/core.html
+
+代理速度对比-扩展
+
+◆CGLib 底层使用asm字节码生成的，比反射效率要高，
+
+◆JDK动态代理
+
+◆速度对比
+
+万次执行，jdk动态代理要比cglib快百分二十左右。
+
+### 1.7　　与其他设计模式关系：
+
+◆代理模式和装饰者模式
+
+目的不同，装饰者模式是为对象加上行为，而代理模式是控制访问，代理模式更加关注通过控制代理人的方式来增强目标对象。增强对象的方式一般是增强对象的某些行为。
+
+◆代理模式和适配器模式
+
+后者主要改变所要考虑对象的接口，前者是不可以改变所代理类的接口的。
  
 
-1.2　　代码演练2
+
 
 
 
