@@ -1164,7 +1164,231 @@ public interface KeyedPooledObjectFactory<K, V> {
 
 ◆可以用访问模式访问组合模式的递归结构
 
+### 源码解析
 
+#### 1.1　　jdk源码解析之Container
+
+```java
+//实现窗口菜单，属于编写cs软件结构时所使用的
+//该方法将相同类型的接口类型或者抽象类类型转化为树状结构
+public class Container extends Component { 
+/**
+     * Appends the specified component to the end of this container.
+     * This is a convenience method for {@link #addImpl}.
+     * <p>
+     * This method changes layout-related information, and therefore,
+     * invalidates the component hierarchy. If the container has already been
+     * displayed, the hierarchy must be validated thereafter in order to
+     * display the added component.
+     *
+     * @param     comp   the component to be added
+     * @exception NullPointerException if {@code comp} is {@code null}
+     * @see #addImpl
+     * @see #invalidate
+     * @see #validate
+     * @see javax.swing.JComponent#revalidate()
+     * @return    the component argument
+     */
+    public Component add(Component comp) {
+        addImpl(comp, null, -1);
+        return comp;
+    }
+}
+```
+
+#### 1.2　　jdk源码解析之HashMap
+```java
+public class HashMap<K,V>
+    extends AbstractMap<K,V>
+    implements Map<K,V>, Cloneable, Serializable
+{
+
+ /**
+     * Copies all of the mappings from the specified map to this map.
+     * These mappings will replace any mappings that this map had for
+     * any of the keys currently in the specified map.
+     *
+     * @param m mappings to be stored in this map
+     * @throws NullPointerException if the specified map is null
+     */
+    public void putAll(Map<? extends K, ? extends V> m) {
+        int numKeysToBeAdded = m.size();
+        if (numKeysToBeAdded == 0)
+            return;
+
+        if (table == EMPTY_TABLE) {
+            inflateTable((int) Math.max(numKeysToBeAdded * loadFactor, threshold));
+        }
+
+        /*
+         * Expand the map if the map if the number of mappings to be added
+         * is greater than or equal to threshold.  This is conservative; the
+         * obvious condition is (m.size() + size) >= threshold, but this
+         * condition could result in a map with twice the appropriate capacity,
+         * if the keys to be added overlap with the keys already in this map.
+         * By using the conservative calculation, we subject ourself
+         * to at most one extra resize.
+         */
+        if (numKeysToBeAdded > threshold) {
+            int targetCapacity = (int)(numKeysToBeAdded / loadFactor + 1);
+            if (targetCapacity > MAXIMUM_CAPACITY)
+                targetCapacity = MAXIMUM_CAPACITY;
+            int newCapacity = table.length;
+            while (newCapacity < targetCapacity)
+                newCapacity <<= 1;
+            if (newCapacity > table.length)
+                resize(newCapacity);
+        }
+
+        for (Map.Entry<? extends K, ? extends V> e : m.entrySet())
+            put(e.getKey(), e.getValue());
+    }
+}
+```
+
+#### 1.3　　jdk源码解析之ArrayList
+```java
+public class ArrayList<E> extends AbstractList<E>
+        implements List<E>, RandomAccess, Cloneable, java.io.Serializable
+{
+ public boolean addAll(Collection<? extends E> c) {
+        Object[] a = c.toArray();
+        int numNew = a.length;
+        ensureCapacityInternal(size + numNew);  // Increments modCount
+        System.arraycopy(a, 0, elementData, size, numNew);
+        size += numNew;
+        return numNew != 0;
+    }
+
+}
+```
+```java
+public interface List<E> extends Collection<E> {
+
+}
+```
+#### 1.4　　MyBaties源码解析之SqlNode
+SqlNode接口：
+```java
+package org.apache.ibatis.scripting.xmltags;
+
+public interface SqlNode {
+    boolean apply(DynamicContext var1);
+}
+```
+MixedSqlNode实现类：
+```java
+/**
+ *    Copyright 2009-2015 the original author or authors.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+package org.apache.ibatis.scripting.xmltags;
+
+import java.util.List;
+
+/**
+ * @author Clinton Begin
+ */
+public class MixedSqlNode implements SqlNode {
+  private List<SqlNode> contents;
+
+  public MixedSqlNode(List<SqlNode> contents) {
+    this.contents = contents;
+  }
+
+  @Override
+  public boolean apply(DynamicContext context) {
+    for (SqlNode sqlNode : contents) {
+      sqlNode.apply(context);//此处和14-2的print是异曲同工的
+    }
+    return true;
+  }
+}
+```
+WhereSqlNode实现类（引入apply方法）：
+```java
+/**
+ *    Copyright 2009-2015 the original author or authors.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+package org.apache.ibatis.scripting.xmltags;
+
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.ibatis.session.Configuration;
+
+/**
+ * @author Clinton Begin
+ */
+public class WhereSqlNode extends TrimSqlNode {
+
+  private static List<String> prefixList = Arrays.asList("AND ","OR ","AND\n", "OR\n", "AND\r", "OR\r", "AND\t", "OR\t");
+
+  public WhereSqlNode(Configuration configuration, SqlNode contents) {
+    super(configuration, contents, "WHERE", prefixList, null, null);
+  }
+
+}
+```
+TrimSqlNode（调到apply方法）
+````java
+public class TrimSqlNode implements SqlNode {
+
+public TrimSqlNode(Configuration configuration, SqlNode contents, String prefix, String prefixesToOverride, String suffix, String suffixesToOverride) {
+    this(configuration, contents, prefix, parseOverrides(prefixesToOverride), suffix, parseOverrides(suffixesToOverride));
+  }
+
+protected TrimSqlNode(Configuration configuration, SqlNode contents, String prefix, List<String> prefixesToOverride, String suffix, List<String> suffixesToOverride) {
+    this.contents = contents;
+    this.prefix = prefix;
+    this.prefixesToOverride = prefixesToOverride;
+    this.suffix = suffix;
+    this.suffixesToOverride = suffixesToOverride;
+    this.configuration = configuration;
+  }
+
+  @Override
+  public boolean apply(DynamicContext context) {
+    FilteredDynamicContext filteredDynamicContext = new FilteredDynamicContext(context);
+    boolean result = contents.apply(filteredDynamicContext);
+    filteredDynamicContext.applyAll();
+    return result;
+  }
+
+public void applyAll() {
+  sqlBuffer = new StringBuilder(sqlBuffer.toString().trim());
+  String trimmedUppercaseSql = sqlBuffer.toString().toUpperCase(Locale.ENGLISH);
+  if (trimmedUppercaseSql.length() > 0) {
+    applyPrefix(sqlBuffer, trimmedUppercaseSql);
+    applySuffix(sqlBuffer, trimmedUppercaseSql);
+  }
+  delegate.appendSql(sqlBuffer.toString());
+}
+}
+````
 
 
 
