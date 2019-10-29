@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.behavioral.templatemethod;
+package com.exmyth.hello.design.pattern.behavioral.templatemethod.v2;
 
 /**
  * 设计模式课程，

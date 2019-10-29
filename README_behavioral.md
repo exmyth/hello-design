@@ -46,6 +46,140 @@
 
 模板方法模式是针对定义一个算法的流程，将一些不太一样的具体步骤交给子类去实现。
 
+### 1.8 源码解析
+1.1　　　　源码解析1(在jdk中的使用)
+AbstractList（父类）
+```java
+public abstract class AbstractList<E> extends AbstractCollection<E> implements List<E> {
+
+//get方法为抽象方法，完全交给子类去实现
+
+abstract public E get(int index);
+
+}
+```
+ArrayList（子类）
+```java
+public class ArrayList<E> extends AbstractList<E>
+        implements List<E>, RandomAccess, Cloneable, java.io.Serializable
+{
+//子类来实现get方法
+ public E get(int index) {
+        rangeCheck(index);
+
+        return elementData(index);
+    }
+}
+```
+同理：AbstractSet，AbstractMap同样采用了模版方法模式
+
+#### 1.2　　　　源码解析2（在servlet中的应用）
+HttpServlet
+```java
+public abstract class HttpServlet extends GenericServlet {
+/***
+   *    doget方法，dopost方法，service方法
+   *     httpServlet中定义了一套模版，我们使用的时候只要继承httpServlet，并且实现doget和dopost方法就可以了
+   *     注意：权限是protected，也就是只有子类才能实现这些方法
+   */
+
+//doget方法
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String protocol = req.getProtocol();
+        String msg = lStrings.getString("http.method_get_not_supported");
+        if (protocol.endsWith("1.1")) {
+            resp.sendError(405, msg);
+        } else {
+            resp.sendError(400, msg);
+        }
+
+    }
+
+//dopost方法
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String protocol = req.getProtocol();
+        String msg = lStrings.getString("http.method_post_not_supported");
+        if (protocol.endsWith("1.1")) {
+            resp.sendError(405, msg);
+        } else {
+            resp.sendError(400, msg);
+        }
+
+    }
+}
+```
+#### 1.3　　　　源码解析3（在mybaties中的应用）
+BaseExecutor（父类）
+```java
+public abstract class BaseExecutor implements Executor {
+//这是一个执行sql的类
+//其中有四个方法，重点看doUpdate方法，
+//它有四个子类，分别是在简单sql doupdate，复用sql doupdate，批量sql doupdate，等
+
+   protected abstract int doUpdate(MappedStatement var1, Object var2) throws SQLException;
+
+    protected abstract List<BatchResult> doFlushStatements(boolean var1) throws SQLException;
+
+    protected abstract <E> List<E> doQuery(MappedStatement var1, Object var2, RowBounds var3, ResultHandler var4, BoundSql var5) throws SQLException;
+
+    protected abstract <E> Cursor<E> doQueryCursor(MappedStatement var1, Object var2, RowBounds var3, BoundSql var4) throws SQLException;
+}
+```
+子类BatchExecutor ：
+```java
+public class BatchExecutor extends BaseExecutor {
+　　@Override
+  public int doUpdate(MappedStatement ms, Object parameterObject) throws SQLException {
+    final Configuration configuration = ms.getConfiguration();
+    final StatementHandler handler = configuration.newStatementHandler(this, ms, parameterObject, RowBounds.DEFAULT, null, null);
+    final BoundSql boundSql = handler.getBoundSql();
+    final String sql = boundSql.getSql();
+    final Statement stmt;
+    if (sql.equals(currentSql) && ms.equals(currentStatement)) {
+      int last = statementList.size() - 1;
+      stmt = statementList.get(last);
+      applyTransactionTimeout(stmt);
+     handler.parameterize(stmt);//fix Issues 322
+      BatchResult batchResult = batchResultList.get(last);
+      batchResult.addParameterObject(parameterObject);
+    } else {
+      Connection connection = getConnection(ms.getStatementLog());
+      stmt = handler.prepare(connection, transaction.getTimeout());
+      handler.parameterize(stmt);    //fix Issues 322
+      currentSql = sql;
+      currentStatement = ms;
+      statementList.add(stmt);
+      batchResultList.add(new BatchResult(ms, sql, parameterObject));
+    }
+  // handler.parameterize(stmt);
+    handler.batch(stmt);
+    return BATCH_UPDATE_RETURN_VALUE;
+  }
+
+}
+```
+子类SimpleExecutor ：
+```java
+public class SimpleExecutor extends BaseExecutor {
+  @Override
+  public int doUpdate(MappedStatement ms, Object parameter) throws SQLException {
+    Statement stmt = null;
+    try {
+      Configuration configuration = ms.getConfiguration();
+      StatementHandler handler = configuration.newStatementHandler(this, ms, parameter, RowBounds.DEFAULT, null, null);
+      stmt = prepareStatement(handler, ms.getStatementLog());
+      return handler.update(stmt);
+    } finally {
+      closeStatement(stmt);
+    }
+  }
+}
+```
+
+
+
+
+
 
 
 
