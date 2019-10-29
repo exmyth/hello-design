@@ -1672,21 +1672,110 @@ Spring代理选择-扩展
 ◆代理模式和适配器模式
 
 后者主要改变所要考虑对象的接口，前者是不可以改变所代理类的接口的。
+
+### 1.8 代码演练
+
+#### 1.1 代码演练1（静态代理之分库操作）
+需求：订单管理，模拟前置后置方法，模拟分库管理
+
+重点：重点看订单静态代理，动态数据源和分库操作上下文。
+#### 2.1　　动态代理invoke怎么执行的？
+1.Proxy.newProxyInstance(//参数省略了...)的部分源码
+
+2.程序运行时产生一个类$proxyQ
+
+3.Sproxy0类继承自Proxy类，实现了目标对象的父类接口（借鉴的百度提供的源码
+
+4.Sproxy0类有多个Method成员变量，它的静态代码块给Method赋值为我们自己的接口的实现类的对应的Method对象
+
+5.Sproxyo实现接口的方法调用了super.h.invoke（参数），这里的参数包括Method变量
+
+代理对象调接口中的方法。代理对象的真身是$proxy0 调用了对应的方法。
+此方法内部调用其父类的成员h调用h的invoke方法。
+就是调用传入了InvocationHandler的invoke方法，至于返回值，那就看我们的InvocationHandler的实现类怎么写了。
  
+#### 1.9 源码解析
+回到顶部
+1.1 源码解析1（jdk中的应用）
+java.lang.reflect.Proxy
+```java
+public class Proxy implements java.io.Serializable {
+    protected Proxy(InvocationHandler h) {
+        doNewInstanceCheck();
+        this.h = h;
+    }
 
+//此处产生一个新的实例（目标对象）
+public static Object newProxyInstance(ClassLoader loader,
+                                          Class<?>[] interfaces,
+                                          InvocationHandler h)
+        throws IllegalArgumentException
+    {
+        if (h == null) {
+            throw new NullPointerException();
+        }
 
+        final Class<?>[] intfs = interfaces.clone();
+        final SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            checkProxyAccess(Reflection.getCallerClass(), loader, intfs);
+        }
 
+        /*
+         * Look up or generate the designated proxy class.
+         */
+        Class<?> cl = getProxyClass0(loader, intfs);
 
+        /*
+         * Invoke its constructor with the designated invocation handler.
+         */
+        try {
+            final Constructor<?> cons = cl.getConstructor(constructorParams);
+            final InvocationHandler ih = h;
+            if (sm != null && ProxyAccessHelper.needsNewInstanceCheck(cl)) {
+                // create proxy instance with doPrivilege as the proxy class may
+                // implement non-public interfaces that requires a special permission
+                return AccessController.doPrivileged(new PrivilegedAction<Object>() {
+                    public Object run() {
+                        return newInstance(cons, ih);
+                    }
+                });
+            } else {
+                return newInstance(cons, ih);
+            }
+        } catch (NoSuchMethodException e) {
+            throw new InternalError(e.toString());
+        }
+    }
+}
+```
+1.2 源码解析2（spring中的应用）
+ProxyFactoryBean
+```java
+public class ProxyFactoryBean extends ProxyCreatorSupport implements FactoryBean<Object>, BeanClassLoaderAware, BeanFactoryAware {    
+    
+   //如果不声明，默认单例对象，注解声明多例，则声明多例对象
+   public Object getObject() throws BeansException {
+        this.initializeAdvisorChain();
+        if (this.isSingleton()) {
+            return this.getSingletonInstance();
+        } else {
+            if (this.targetName == null) {
+                this.logger.warn("Using non-singleton proxies with singleton targets is often undesirable. Enable prototype proxies by setting the 'targetName' property.");
+            }
 
-
-
-
-
-
-
-
-
-
-
-
-
+            return this.newPrototypeInstance();
+        }
+    }
+}
+```
+1.3　　　　源码解析3（mybaties中的应用）
+MapperProxyFactory
+```java
+public class MapperProxyFactory<T> {
+　　public T newInstance(SqlSession sqlSession) {
+        MapperProxy<T> mapperProxy = new MapperProxy(sqlSession, this.mapperInterface, this.methodCache);
+        return this.newInstance(mapperProxy);
+    }
+}
+```
