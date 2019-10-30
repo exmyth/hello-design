@@ -8,6 +8,14 @@
     <version>0.0.1-SNAPSHOT</version>
     <modelVersion>4.0.0</modelVersion>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>23.0</version>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>

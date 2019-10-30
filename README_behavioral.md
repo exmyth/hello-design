@@ -318,7 +318,7 @@ if...else..…
 
 
 ## 解释器模式
-### 类型：行为性
+### 类型：行为型
 开源解析工具包：expression4j、jep、mexp、SpelExpressionParser(String)
 
 解释器模式 VS 适配器模式
@@ -326,7 +326,16 @@ if...else..…
 ### 源码分析
 SpelExpressionParser
 
+## 观察者模式(发布订阅模式)
+### 类型：行为型
+### 源码分析
+RequestContextListener
+ReaderEventListener
+Subscribe(guava)
 
+## 备忘录模式
+### 类型：行为型
+### 源码分析
 
 
 
