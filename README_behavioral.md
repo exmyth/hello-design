@@ -128,7 +128,7 @@ public abstract class BaseExecutor implements Executor {
 子类BatchExecutor ：
 ```java
 public class BatchExecutor extends BaseExecutor {
-　　@Override
+  @Override
   public int doUpdate(MappedStatement ms, Object parameterObject) throws SQLException {
     final Configuration configuration = ms.getConfiguration();
     final StatementHandler handler = configuration.newStatementHandler(this, ms, parameterObject, RowBounds.DEFAULT, null, null);
@@ -175,12 +175,145 @@ public class SimpleExecutor extends BaseExecutor {
   }
 }
 ```
+## 迭代器
+### 1.1　　类型：行为型
 
+### 1.2　　定义：
+◆定义：提供一种方法，顺序访问一个集合对象中的各个元素，而又不暴露该对象的内部表示
 
+### 1.3　　适用场景：
+◆访问一个集合对象的内容而无需暴露它的内部表示。
 
+◆为遍历不同的集合结构提供一个统一的接口。
 
+### 1.4　　优点：
+◆分离了集合对象的遍历行为
 
+抽象出了一个迭代器来负责集合对象的遍历，这样可以让外部代码透明的访问内部的数据。
 
+### 1.5　　缺点：
+◆类的个数成对增加
+
+迭代器模式是将遍历数据和存储数据职责进行分离，所以如果新出现一种集合类，需要新增加集合对应的新的迭代器类。
+
+### 1.6　　与其他设计模式关系：
+迭代器模式和访问者模式：
+
+相同点：两者都是迭代的访问一个集合对象中的各个元素，
+
+不同定的是后者访问开放部分，作用于对象的操作上，而前者扩展开放的部分是在集合的种类上。
+
+两者的实现方式上有很大的区别。
+
+### 1.7  源码解析
+1.1　　　　源码解析1（jdk中的应用）
+java.util.Iterator（接口）
+```java
+public interface Iterator<E> {
+    /**
+     * Returns {@code true} if the iteration has more elements.
+     * (In other words, returns {@code true} if {@link #next} would
+     * return an element rather than throwing an exception.)
+     *
+     * @return {@code true} if the iteration has more elements
+     */
+    //和我们18-2中的isNext有相同的作用
+    boolean hasNext();
+}
+```
+java.util.ArrayList（实现）
+```java
+private class Itr implements Iterator<E> {
+
+        public boolean hasNext() {
+            return cursor != size;
+        }
+
+        @SuppressWarnings("unchecked")
+        public E next() {
+            checkForComodification();
+            int i = cursor;
+            if (i >= size)
+                throw new NoSuchElementException();
+            Object[] elementData = ArrayList.this.elementData;
+            if (i >= elementData.length)
+                throw new ConcurrentModificationException();
+            cursor = i + 1;
+            return (E) elementData[lastRet = i];
+        }
+}
+```
+1.2　　　　源码解析2（mybaties中的应用）
+DefaultCursor.java
+```java
+public class DefaultCursor<T> implements Cursor<T> {
+//创建了游标迭代器 
+private final CursorIterator cursorIterator = new CursorIterator();
+ 
+@Override
+    public Iterator<T> iterator() {
+        if (iteratorRetrieved) {
+            throw new IllegalStateException("Cannot open more than one iterator on a Cursor");
+        }
+        iteratorRetrieved = true;
+        return cursorIterator;
+    }
+}
+```
+
+## 策略模式
+### 1.1　　类型：行为型
+
+### 1.2　　定义：
+定义：定义了算法家族，分别封装起来，让它们之间可以互相替换，此模式让算法的变化不会影响到使用算法的用户。
+
+if...else..…
+
+扩展：
+
+使用算法的用户就是应用层，我们把不同的算法封装到不同的类中，让她们之间可以相互替换。
+
+如田忌赛马，满减等
+
+大量的if else可以消除掉，
+
+### 1.3　　适用场景：
+系统有很多类，而他们的区别仅仅在于他们的行为不同
+
+一个系统需要动态地在几种算法中选择一种
+
+扩展：把对象的不同行为放到不同的类中，她有很多行为类，每一种类对应每一种行为。
+
+如：两个数 加法策略，减法策略，乘法策略，除法策略等等
+
+### 1.4　　优点：
+开闭原则
+
+避免使用多重条件转移语句（if else switch）
+
+提高算法的保密性和安全性
+
+### 1.5　　缺点：
+客户端必须知道所有的策略类，并自行决定使用哪一个策略类。
+产生很多策略类
+
+### 1.6　　与其他设计模式关系：
+◆策略模式和工厂模式
+
+后者是创建型的，前者是行为型的。
+
+后者接收指令，创建出符合要求的对象，前者接收已经创建好的对象，从而实现不同的行为。
+
+◆策略模式和状态模式
+
+前者客户端需要知道我们使用的哪个策略，后者客户端不需要知道具体的状态，且状态会自动转换。
+
+## 1.7　　　　代码演练
+### 1.1　　代码演练1(策略模式简单应用)
+需求：木木网卖课程，为了促进销售，618实行买课程立减10元，双十一实行满50减10元，还有返现的优惠（这个活动还没有开始）。请实现它
+### 1.2　　代码演练2（优化应用类）
+测试类优化：
+### 1.3　　代码演练3
 
 
 

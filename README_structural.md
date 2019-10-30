@@ -1773,7 +1773,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport implements FactoryBean
 MapperProxyFactory
 ```java
 public class MapperProxyFactory<T> {
-　　public T newInstance(SqlSession sqlSession) {
+    public T newInstance(SqlSession sqlSession) {
         MapperProxy<T> mapperProxy = new MapperProxy(sqlSession, this.mapperInterface, this.methodCache);
         return this.newInstance(mapperProxy);
     }

@@ -2,6 +2,8 @@
 
 The Way To Architect
 
+![GoF](image/GoF.jpg)
+
 ## 设计模式
 
 [创建型模式](https://github.com/exmyth/hello-design/blob/master/README_creational.md)：
