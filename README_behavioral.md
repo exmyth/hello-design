@@ -336,7 +336,7 @@ Subscribe(guava)
 ## 备忘录模式
 ### 类型：行为型
 ### 源码分析
-
+spring-webflow/spring-binding/StateManageableMessageContext
 
 
 
