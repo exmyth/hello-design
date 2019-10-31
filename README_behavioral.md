@@ -277,6 +277,9 @@ if...else..…
 
 大量的if else可以消除掉，
 
+继承是重用代码的利器，但继承并不是最好的工具。
+
+Favor composition over inheritance.(复合优于继承)
 ### 1.3　　适用场景：
 系统有很多类，而他们的区别仅仅在于他们的行为不同
 
@@ -285,6 +288,8 @@ if...else..…
 扩展：把对象的不同行为放到不同的类中，她有很多行为类，每一种类对应每一种行为。
 
 如：两个数 加法策略，减法策略，乘法策略，除法策略等等
+
+许多相关的类仅仅是行为差异，运行时选取不同的算法遍体，通过条件语句在多个分支中选取一。
 
 ### 1.4　　优点：
 开闭原则
@@ -297,7 +302,15 @@ if...else..…
 客户端必须知道所有的策略类，并自行决定使用哪一个策略类。
 产生很多策略类
 
-### 1.6　　与其他设计模式关系：
+### 1.6　总结
+- 将一些方法抽象成接口
+- 在基类中实例化接口
+- 设置接口的私有成员变量
+- 在积累中调用接口的同样方法
+- 这样实现了代码的复用
+- 面向接口编程,而不是面向实现编程,多用组合
+
+### 1.7　　与其他设计模式关系：
 ◆策略模式和工厂模式
 
 后者是创建型的，前者是行为型的。
@@ -526,7 +539,59 @@ Subscribe(guava)
 - Servlet.FilterChainr#doFilter
 - SpringSecurity
 
+## 访问者模式
+### 行为型
+### 源码分析
+- java.nio.file.FileVisitor
+- BeanDefinitionVisitor
+```java
+/**
+ * Visitor class for traversing {@link BeanDefinition} objects, in particular
+ * the property values and constructor argument values contained in them,
+ * resolving bean metadata values.
+ *
+ * <p>Used by {@link PropertyPlaceholderConfigurer} to parse all String values
+ * contained in a BeanDefinition, resolving any placeholders found.
+ *
+ * @author Juergen Hoeller
+ * @author Sam Brannen
+ * @since 1.2
+ * @see BeanDefinition
+ * @see BeanDefinition#getPropertyValues
+ * @see BeanDefinition#getConstructorArgumentValues
+ * @see PropertyPlaceholderConfigurer
+ */
+public class BeanDefinitionVisitor {
+    /**
+     * Traverse the given BeanDefinition object and the MutablePropertyValues
+     * and ConstructorArgumentValues contained in them.
+     * @param beanDefinition the BeanDefinition object to traverse
+     * @see #resolveStringValue(String)
+     */
+    public void visitBeanDefinition(BeanDefinition beanDefinition) {
+        visitParentName(beanDefinition);
+        visitBeanClassName(beanDefinition);
+        visitFactoryBeanName(beanDefinition);
+        visitFactoryMethodName(beanDefinition);
+        visitScope(beanDefinition);
+        if (beanDefinition.hasPropertyValues()) {
+            visitPropertyValues(beanDefinition.getPropertyValues());
+        }
+        if (beanDefinition.hasConstructorArgumentValues()) {
+            ConstructorArgumentValues cas = beanDefinition.getConstructorArgumentValues();
+            visitIndexedArgumentValues(cas.getIndexedArgumentValues());
+            visitGenericArgumentValues(cas.getGenericArgumentValues());
+        }
+    }
+}
+```
 
+## 状态模式
+### 行为型
+### 源码分析
+- com.sun.faces/jsf-api
+    javax.faces.lifecyle.Lifecycle
+    FacesServlet
 
 
 
