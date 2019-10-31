@@ -316,17 +316,66 @@ if...else..…
 ### 1.3　　代码演练3
 ## 1.8
 
-
 ## 解释器模式
-### 类型：行为型
-开源解析工具包：expression4j、jep、mexp、SpelExpressionParser(String)
 
-解释器模式 VS 适配器模式
+### 0x01.定义与类型
 
-### 源码分析
-SpelExpressionParser
+- 定义：给定一个语言，定义它的文法的一种表示，并定义一个解释器，这个解释器使用该表示来解释语言中的句子。
+- 为了解释一种语言，而为语言创建的解释器。
+- 类型：行为型
+- 开源解析工具包：expression4j、jep、mexp、SpelExpressionParser(String)
+- UML类图
+
+![interpreter](./image/interpreter.png)
+
+- 一个解释器模式中包含的四种角色
+  - 抽象（或接口）解释器(Interpreter)：声明一个所有具体表达式都要实现的抽象接口（或者抽象类），接口中主要是一个interpret()方法，称为解释操作。具体解释任务由它的各个实现类来完成，具体的解释器分别由终结符解释器和非终结符解释器完成。
+  - 终结符表达式（TerminalExpression）：实现与文法中的元素相关联的解释操作，通常一个解释器模式中只有一个终结符表达式，但有多个实例，对应不同的终结符。终结符一半是文法中的运算单元，比如有一个简单的公式R=R1+R2，在里面R1和R2就是终结符，对应的解析R1和R2的解释器就是终结符表达式。
+  - 非终结符表达式（NonterminalExpression）：文法中的每条规则对应于一个非终结符表达式，非终结符表达式一般是文法中的运算符或者其他关键字，比如公式R=R1+R2中，+就是非终结符，解析+的解释器就是一个非终结符表达式。非终结符表达式根据逻辑的复杂程度而增加，原则上每个文法规则都对应一个非终结符表达式。
+  - 环境角色（Context）：这个角色的任务一般是用来存放文法中各个终结符所对应的具体值，比如R=R1+R2，我们给R1赋值100，给R2赋值200。这些信息需要存放到环境角色中，很多情况下我们使用Map来充当环境角色就足够了。
+
+### 0x02.适用场景
+
+- 在某个特定类型问题发生频率足够高，需要自定义语法的场景。比如数据按照配置规则ETL！
+
+- 模式对比：解释器模式 VS 适配器模式
+
+### 0x03.优缺点
+
+### 1.优点
+
+- 语法由很多类表示，容易改变及扩展此“语言”
+
+### 2.缺点
+
+- 当语法规则数目太多时，增加了系统复杂度
+
+### 0x04.样例代码
+
+> 使用解释器模式实现一个简单的语法 计算 **6 100 11 + *** 表达式，首先记录数值，然后按照顺序添加符号计算。
+> 100 + 11
+> 111 * 6
+> 666
+
+- 代码对应的UML类图
+
+![interpreter2](./image/interpreter2.png)
+
+在样例中：AddInterpreter和MultiInterpreter为终结表达式，NumberInterpreter为非终结表达式，ExpressionParser为环境角色。
+
+### 0x05.相关设计模式
+
+- 解释器模式和适配器模式
+  - 适配器模式不需要先知道适配的规则
+  - 解释器模式要预先知道语法规则
+
+### 0x06.源码中的解释器模式
+
+- Pattern
+- Spring SpelExpressionParse
 
 ## 观察者模式(发布订阅模式)
+## 1.定义：定义对象间的一对多的依赖关系。当一个对象的状态发生改变时，所有依赖于它的对象都得到通知并自动更新。
 ### 类型：行为型
 ### 源码分析
 RequestContextListener
@@ -334,11 +383,148 @@ ReaderEventListener
 Subscribe(guava)
 
 ## 备忘录模式
+
+### 0x01.定义与类型
+
+- 定义：保存一个对象的某个状态，以便在适当的时候恢复对象。
+- “后悔药”
+- 类型：行为型
+
+### 0x02.适用场景
+
+- 保存及恢复数据相关业务场景
+- 后悔的时候，即向恢复到之前的状态
+
+### 0x03.优点
+
+- 为用户提供一种可恢复机制
+- 存档信息的封装
+
+### 0x04.缺点
+
+- 资源占用
+
+### 0x05.相关设计模式
+
+- 备忘录模式和状态模式
+    - 备忘录：用实例表示状态
+    - 状态：用类来表示状态
+
+### 0x06.源码中的备忘录模式
+
+- spring-webflow/spring-binding/StateManageableMessageContext
+
+## 命令模式
+### 0x01.定义与类型
+
+- 定义：将“请求”封装成对象，以便使用不同的请求。
+- 命令模式解决了应用程序中对象的职责以及它们之间的通信方式
+- 类型：行为型
+
+### 0x02.适用场景
+
+- 请求调用者和请求接收者需要解耦，使得调用者和接收者不直接交互
+- 需要抽象出等待执行的行为
+
+### 0x03.优点
+
+- 降低耦合
+- 容易扩展新命令或一组命令
+
+### 0x04.缺点
+
+- 命令的无限扩展会增加类的数量，提高系统实现复杂度
+
+### 0x05.相关设计模式
+
+- 命令模式和备忘录模式
+    - 适用备忘录模式保存命令的历史记录
+
+### 0x06.源码中的命令模式
+
+- Runnable
+- junit.framework.Test
+
+## 中介者模式
 ### 类型：行为型
 ### 源码分析
-spring-webflow/spring-binding/StateManageableMessageContext
+- java.util.Timer
 
+同事类：TimerTask
+```text
+/**
+     * Schedule the specified timer task for execution at the specified
+     * time with the specified period, in milliseconds.  If period is
+     * positive, the task is scheduled for repeated execution; if period is
+     * zero, the task is scheduled for one-time execution. Time is specified
+     * in Date.getTime() format.  This method checks timer state, task state,
+     * and initial execution time, but not period.
+     *
+     * @throws IllegalArgumentException if <tt>time</tt> is negative.
+     * @throws IllegalStateException if task was already scheduled or
+     *         cancelled, timer was cancelled, or timer thread terminated.
+     * @throws NullPointerException if {@code task} is null
+     */
+    private void sched(TimerTask task, long time, long period) {
+        if (time < 0)
+            throw new IllegalArgumentException("Illegal execution time.");
 
+        // Constrain value of period sufficiently to prevent numeric
+        // overflow while still being effectively infinitely large.
+        if (Math.abs(period) > (Long.MAX_VALUE >> 1))
+            period >>= 1;
+
+        synchronized(queue) {
+            if (!thread.newTasksMayBeScheduled)
+                throw new IllegalStateException("Timer already cancelled.");
+
+            synchronized(task.lock) {
+                if (task.state != TimerTask.VIRGIN)
+                    throw new IllegalStateException(
+                        "Task already scheduled or cancelled");
+                task.nextExecutionTime = time;
+                task.period = period;
+                task.state = TimerTask.SCHEDULED;
+            }
+
+            queue.add(task);
+            if (queue.getMin() == task)
+                queue.notify();
+        }
+    }
+```
+
+## 责任链模式
+
+### 0x01.定义与类型
+
+- 定义：为请求创建一个接收此次请求对象的链
+- 类型：行为型
+
+### 0x02.适用场景
+
+- 一个请求的处理需要多个对象当中的一个或几个协作处理
+
+### 0x03.优点
+
+- 请求的发送者和接收者（请求的处理）解耦
+- 责任链可以动态组合
+
+### 0x04.缺点
+
+- 责任链太长或者处理时间过长，影响性能
+- 责任链有可能过多
+
+### 0x05.相关的设计模式
+
+- 责任链模式和状态模式
+    - 责任链模式各个对象并不指定下一个处理的对象是谁
+    - 状态模式：让每个状态对象知道下一个对象是谁
+
+### 0x06.源码中的责任链模式
+
+- Servlet.FilterChainr#doFilter
+- SpringSecurity
 
 
 

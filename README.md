@@ -2,7 +2,7 @@
 
 The Way To Architect
 
-![GoF](image/GoF.jpg)
+![GoF](./image/GoF.jpg)
 
 ## 设计模式
 

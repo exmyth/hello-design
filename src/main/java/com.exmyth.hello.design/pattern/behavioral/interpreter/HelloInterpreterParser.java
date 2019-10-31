@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.interpreter;
+package com.exmyth.hello.design.pattern.behavioral.interpreter;
 
 import java.util.Stack;
 

@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.observer;
+package com.exmyth.hello.design.pattern.behavioral.observer;
 
 /**
  * @author maming.zhong

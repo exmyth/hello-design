@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.observer.v2;
+package com.exmyth.hello.design.pattern.behavioral.observer.v2;
 
 import com.google.common.eventbus.EventBus;
 

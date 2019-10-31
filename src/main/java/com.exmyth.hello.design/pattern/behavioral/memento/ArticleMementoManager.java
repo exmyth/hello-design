@@ -1,4 +1,4 @@
-package com.exmyth.hello.design.pattern.memento;
+package com.exmyth.hello.design.pattern.behavioral.memento;
 
 import java.util.Stack;
 
