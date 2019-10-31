@@ -1,7 +1,7 @@
 package com.exmyth.hello.design.pattern.behavioral.interpreter;
 
 /**
- * @author maming.zhong
+ * @author exmyth
  * @date 2019-10-30 15:16
  * @description
  */

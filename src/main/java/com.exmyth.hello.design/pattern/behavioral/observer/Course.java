@@ -3,7 +3,7 @@ package com.exmyth.hello.design.pattern.behavioral.observer;
 import java.util.Observable;
 
 /**
- * @author maming.zhong
+ * @author exmyth
  * @date 2019-10-30 17:25
  * @description
  */

@@ -3,7 +3,7 @@ package com.exmyth.hello.design.pattern.behavioral.strategy.v3;
 import com.exmyth.hello.design.pattern.behavioral.strategy.PromotionStrategy;
 
 /**
- * @author maming.zhong
+ * @author exmyth
  * @date 2019-10-30 11:46
  * @description
  */

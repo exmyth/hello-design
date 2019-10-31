@@ -1,7 +1,7 @@
 package com.exmyth.hello.design.pattern.creational.singleton.enumexample;
 
 /**
- * @author maming.zhong
+ * @author exmyth
  * @date 2019-10-21 16:58
  * @description
  */

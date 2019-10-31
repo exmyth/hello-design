@@ -3,7 +3,7 @@ package com.exmyth.hello.design.pattern.behavioral.observer.v2;
 import com.google.common.eventbus.EventBus;
 
 /**
- * @author maming.zhong
+ * @author exmyth
  * @date 2019-10-30 18:00
  * @description
  */

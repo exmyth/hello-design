@@ -4,7 +4,7 @@ import java.util.Observable;
 import java.util.Observer;
 
 /**
- * @author maming.zhong
+ * @author exmyth
  * @date 2019-10-30 17:31
  * @description
  */
